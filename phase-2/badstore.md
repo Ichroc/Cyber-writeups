@@ -6,7 +6,7 @@
 
 > ⚠️ **Périmètre.** BadStore est une VM *volontairement* vulnérable, lancée en local. Aucune cible tierce, aucune donnée réelle. Ces manipulations sont illégales hors d'un environnement que l'on possède ou pour lequel on a une autorisation écrite.
 
-> 📸 **Captures :** réalisées sur la VM (cible `192.168.56.106`) et intégrées à chaque étape. Seule l'étape 7 (cookie tampering) reste à illustrer avec le cookie décodé/modifié et la commande finale à 9.99 $.
+> 📸 **Captures :** réalisées sur la VM (cible `192.168.56.106`) et intégrées à chaque étape, de la recon jusqu'à l'achat de l'Invisibility Cloak à 9.99 $.
 
 ## Sommaire
 
@@ -216,23 +216,26 @@ Objectif : acheter l'objet d'invisibilité pour **9.99 $**. L'Invisibility Cloak
 
 ### Méthode
 
-1. Ajouter l'objet au panier, puis ouvrir les cookies : `F12` → **Application / Stockage** → Cookies (ou une extension *Cookie-Editor*, ou Burp).
-2. Repérer le cookie du panier. Sa valeur est généralement **encodée en Base64**. La décoder :
-   ```bash
-   echo 'VALEUR_DU_COOKIE' | base64 -d
+1. Ajouter l'Invisibility Cloak au panier, puis ouvrir `F12` → onglet **Storage / Stockage** → **Cookies** (ou une extension *Cookie-Editor*).
+2. Repérer le cookie **`CartID`**. Ici sa valeur est **en clair**, simplement URL-encodée (`%3A` = `:`) :
    ```
-   Apparaissent les articles et leur **prix** (ex. `itemnum:price:qty`).
-3. Remplacer le prix de l'objet par `9.99`, puis ré-encoder :
-   ```bash
-   echo 'PANIER_MODIFIE' | base64
+   1794238256%3A1%3A8995%3A1013
    ```
-4. Coller la nouvelle valeur dans le cookie, recharger le panier, passer commande.
+   soit, décodée : `1794238256 : 1 : 8995 : 1013` → `identifiant : quantité : PRIX : itemnum`. Le prix est écrit tel quel dans le cookie.
 
-**Pourquoi ça marche :** le prix fait autorité alors qu'il est **stocké chez le client**. Le serveur fait confiance au cookie au lieu de recalculer le total depuis sa base. Même faute que la question 6 : **confiance en une donnée côté client**.
+![Cookie CartID dans le DevTools : structure id:qté:prix:itemnum, prix en clair](img/badstore-07-cookie-edit.png)
 
-> ⚠️ **Format variable :** selon la version de BadStore, le cookie encode le prix différemment (ou le total global). Décoder d'abord pour voir la structure réelle, puis ne modifier que le champ prix.
+3. Éditer directement la valeur du cookie et remplacer le segment **prix** `8995` par `9.99` :
+   ```
+   1794238256%3A1%3A9.99%3A1013
+   ```
+4. Recharger le panier, puis **Place Order** : le total passe à **9.99 $**.
 
-> 📸 **Captures à compléter :** (a) le cookie décodé (prix d'origine 8995), (b) le cookie modifié à 9.99, (c) le récap de commande affichant 9.99 $.
+![Commande validée à 9.99 $ après altération du cookie](img/badstore-07-order-999.png)
+
+**Pourquoi ça marche :** le prix fait autorité alors qu'il est **stocké chez le client**. Le serveur lit le cookie `CartID` et facture le prix qu'il y trouve, au lieu de le recalculer depuis `itemdb`. Même faute que la question 6 : **confiance aveugle en une donnée côté client**. On paie l'objet à 8995 $ pour **9.99 $**.
+
+> ⚠️ **Format variable :** selon la version de BadStore, le cookie panier peut être encodé en Base64 (on décode alors avec `base64 -d`, on modifie le prix, on ré-encode). Ici il est en clair — toujours inspecter la structure réelle avant de la modifier.
 
 ---
 
