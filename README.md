@@ -50,4 +50,10 @@ L'intégralité des manipulations offensives de ce dépôt est réalisée **excl
 
 ---
 
+## Licence
+
+Les writeups sont sous licence [CC BY 4.0](LICENSE) : vous pouvez les réutiliser en citant l'auteur. Le code du dossier `tools/` est sous licence [MIT](tools/LICENSE).
+
+---
+
 *Notes d'apprentissage — ESEO, spécialité Cloud, Système & Sécurité.*
